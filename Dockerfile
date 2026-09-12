@@ -1,31 +1,44 @@
-# Use official Node.js 20 Alpine image as base
 FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to leverage Docker cache
 COPY package*.json ./
-# Uncomment the next line if you use pnpm and have pnpm-lock.yaml
-# COPY pnpm-lock.yaml ./
 
-# Install dependencies (choose npm or pnpm)
 RUN npm install
-# If using pnpm, replace with:
-# RUN npm install -g pnpm && pnpm install
 
-# Copy all project files
 COPY . .
 
-# Build the Next.js application
-RUN npm run build
-# Or if using pnpm:
-# RUN pnpm run build
+# --- Variables nécessaires PENDANT le build ---
+# (lib/better-auth/auth.ts se connecte à MongoDB dès le chargement du
+# module, ce qui est exécuté par Next.js pendant "next build". Ces ARG
+# rendent ces valeurs disponibles pour cette étape, peu importe comment
+# l'orchestrateur (Portainer, etc.) gère ses propres fichiers .env.)
+ARG NODE_ENV=production
+ARG MONGODB_URI
+ARG BETTER_AUTH_SECRET
+ARG BETTER_AUTH_URL
+ARG NEXT_PUBLIC_FINNHUB_API_KEY
+ARG FINNHUB_BASE_URL
+ARG GEMINI_API_KEY
+ARG AI_PROVIDER
+ARG INNGEST_SIGNING_KEY
+ARG NODEMAILER_EMAIL
+ARG NODEMAILER_PASSWORD
 
-# Expose the port Next.js runs on
+ENV NODE_ENV=$NODE_ENV \
+    MONGODB_URI=$MONGODB_URI \
+    BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET \
+    BETTER_AUTH_URL=$BETTER_AUTH_URL \
+    NEXT_PUBLIC_FINNHUB_API_KEY=$NEXT_PUBLIC_FINNHUB_API_KEY \
+    FINNHUB_BASE_URL=$FINNHUB_BASE_URL \
+    GEMINI_API_KEY=$GEMINI_API_KEY \
+    AI_PROVIDER=$AI_PROVIDER \
+    INNGEST_SIGNING_KEY=$INNGEST_SIGNING_KEY \
+    NODEMAILER_EMAIL=$NODEMAILER_EMAIL \
+    NODEMAILER_PASSWORD=$NODEMAILER_PASSWORD
+
+RUN npm run build
+
 EXPOSE 3000
 
-# Start the Next.js production server
 CMD ["npm", "start"]
-# Or if using pnpm:
-# CMD ["pnpm", "start"]
