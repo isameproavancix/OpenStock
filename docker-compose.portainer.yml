@@ -1,0 +1,70 @@
+########################################################################
+# STACK 2/2 — Application OpenStock
+#
+# IMPORTANT : ce stack DOIT être déployé via la méthode "Repository" de
+# Portainer (pas "Web editor"), pointant vers TON FORK GitHub. Pourquoi :
+# le build a besoin du vrai code source (Dockerfile, package.json...) ET
+# Portainer écrit les variables d'environnement que tu définis ci-dessous
+# dans un fichier .env à la racine du dépôt cloné — c'est ce fichier .env
+# que "COPY . ." dans le Dockerfile embarque dans l'image, et que Next.js
+# charge automatiquement pendant "next build". Sans la méthode
+# Repository, il n'y a pas de code source ni de .env disponibles pendant
+# le build, et ça échoue.
+#
+# Étapes dans Portainer :
+#   1. Vérifie que le stack "openstock-db" (stack 1) tourne et que
+#      "openstock-mongodb" est healthy.
+#   2. Stacks > Add stack > nomme-le "openstock-app".
+#   3. Choisis "Repository" comme méthode de build.
+#      - Repository URL : https://github.com/<TON-COMPTE>/OpenStock.git
+#      - Repository reference : refs/heads/main (ou ta branche)
+#      - Compose path : laisse vide et colle ce YAML dans le champ prévu,
+#        OU commite ce fichier dans ton fork sous un nom comme
+#        "docker-compose.portainer.yml" et indique ce chemin ici.
+#   4. Descends à "Environment variables" et renseigne CHAQUE variable
+#      ${...} listée ci-dessous.
+#   5. Deploy the stack.
+########################################################################
+
+services:
+  openstock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      extra_hosts:
+        - "mongodb:host-gateway"
+    container_name: openstock
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+
+      # --- Auth (Better Auth) ---
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+
+      # --- Base de données (le service mongodb du stack 1, même réseau) ---
+      MONGODB_URI: mongodb://root:example@mongodb:27017/openstock?authSource=admin
+
+      # --- Finnhub (données boursières) ---
+      NEXT_PUBLIC_FINNHUB_API_KEY: ${FINNHUB_API_KEY}
+      FINNHUB_BASE_URL: https://finnhub.io/api/v1
+
+      # --- IA (résumés / alertes intelligentes) ---
+      AI_PROVIDER: gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+
+      # --- Inngest (jobs planifiés) ---
+      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY}
+
+      # --- Emails (alertes via Gmail) ---
+      NODEMAILER_EMAIL: ${NODEMAILER_EMAIL}
+      NODEMAILER_PASSWORD: ${NODEMAILER_PASSWORD}
+    networks:
+      - openstock-net
+
+networks:
+  openstock-net:
+    external: true
+    name: openstock-net
