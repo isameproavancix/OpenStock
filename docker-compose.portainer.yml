@@ -37,7 +37,7 @@ services:
     container_name: openstock
     restart: unless-stopped
     ports:
-      - "3003:3003"
+      - "3003:3000"
     environment:
       # Répété ici pour le conteneur EN FONCTIONNEMENT (le build ci-dessus
       # ne couvre que l'étape "npm run build").
